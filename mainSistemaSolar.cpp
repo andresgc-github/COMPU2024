@@ -8,15 +8,15 @@
 // Definiciones
 # define SIZExy 18
 // # define SIZEm 9 esto es poquísimo elegante, pero así arreglo mis problemas de sintaxis
-# define SIZEt 2
+// # define SIZEt 2
 
 using namespace std;
 
 // void Leer(double x[SIZExy][SIZEt],string filename); uso la de debajo por el script de python
-void Leer(double x[SIZExy][SIZEt],string filename,int tipo);
-void Reescalar(double x[SIZExy][SIZEt], int tipo);
-void CalcularAceleracion(double a[SIZExy][SIZEt],double m[SIZExy][SIZEt],double r[SIZExy][SIZEt]);
-void Escribir(double x[SIZExy][SIZEt],string filename);
+void Leer(double x[SIZExy],string filename,int tipo);
+void Reescalar(double x[SIZExy], int tipo);
+void CalcularAceleracion(double a[SIZExy],double m[SIZExy],double r[SIZExy]);
+void Escribir(double x[SIZExy],string filename);
 
 
 int main(){
@@ -25,12 +25,12 @@ int main(){
 
     // DECLARACIÓN DE VARIABLES
     // Este array almacena las 9 masas de los cuerpos del sistema solar, empezando por el Sol -- ANTIGUO
-    double m[SIZExy][SIZEt]={0.0}; // El [SIZExy][SIZEt] lo tengo puesto por sintaxis de las funciones que uso debajo
+    double m[SIZExy]={0.0}; // El [SIZExy][SIZEt] lo tengo puesto por sintaxis de las funciones que uso debajo
     // Estos arrays son matrices 18x2, y almacena en este orden: x1, y1, x2, y2, etc. Hace esto para el instante t y para el instante t+h
     // Guarda las componentes x en los índices pares, y las componentes y en los índices impares
-    double r[SIZExy][SIZEt]={0.0}; 
-    double v[SIZExy][SIZEt]={0.0};
-    double a[SIZExy][SIZEt]={0.0};
+    double r[SIZExy]={0.0}; 
+    double v[SIZExy]={0.0};
+    double a[SIZExy]={0.0};
     // A continuación declaro strings con los nombres archivos de texto que uso para leer y escribir los datos y resultados
     string masasini="masasini";
     string posicionesini="posicionesini";
@@ -57,8 +57,8 @@ int main(){
 
     // ESCRIBIR t=0: ahora se escriben todos los valores, reescalados, en los respectivos archivos para t=0
     Escribir(r,posicionesR);
-    Escribir(v,velocidadesR);
-    Escribir(a,aceleracionesR);
+    //Escribir(v,velocidadesR);
+    //Escribir(a,aceleracionesR);
     // Ahora están escritas (reescaladas) r,v,a en el instante inicial t=0.
 
 // BLOQUE 2: evolución temporal
@@ -77,23 +77,28 @@ int main(){
 
     do{
         for(i=0;i<SIZExy;i++){
-            //r[i][0]=r[i][1];
+          /*  //r[i][0]=r[i][1];
             //v[i][0]=v[i][1];
             //a[i][0]=a[i][1];
-            r[i][1]+=h*v[i][1]+0.5*h*h*a[i][1];
-            w[i]=v[i][1]+0.5*h*a[i][1];
+            r[i]+=h*v[i]+0.5*h*h*a[i];
+            //w[i]=v[i]+0.5*h*a[i];
+            w[i]=a[i];  */
+            v[i]+=0.5*h*a[i];
+            r[i]+=h*v[i];
         }
         Escribir(r,posicionesR);
         CalcularAceleracion(a,m,r);
-        Escribir(a,aceleracionesR);
+        //Escribir(a,aceleracionesR);
         for(i=0;i<SIZExy;i++){
-            v[i][1]=w[i]+0.5*h*a[i][1];
+            //v[i]=w[i]+0.5*h*a[i];
+         /* v[i]+=0.5*h*(w[i]+a[i]);  */ 
+            v[i]+=0.5*h*a[i];         
         }
-        Escribir(v,velocidadesR);
+        //Escribir(v,velocidadesR);
         t+=h;
         //cout << t << endl;
 
-    }while(t<500*k);
+    }while(t<1000000*k);
 
 
     return 0;
@@ -101,7 +106,7 @@ int main(){
 
 
 
-void Leer(double x[SIZExy][SIZEt],string filename,int tipo){
+void Leer(double x[SIZExy],string filename,int tipo){
 
     int i;
     FILE *f1;
@@ -111,12 +116,12 @@ void Leer(double x[SIZExy][SIZEt],string filename,int tipo){
 
     if(tipo==1){ // (Masa) Esta opción lee un fichero de 1 sola línea con datos (x1 \tab y1 \tab x2 \tab y2... x0.5*SIZExy \tab y0.5*SIZExy) y los mete en a[SIZExy][1]
         for(i=0;i<SIZExy;i++){
-            fscanf(f1,"%lf\t",&x[i][1]);
+            fscanf(f1,"%lf\t",&x[i]);
         }
         
     } else if(tipo==2){ // (Vectores 2D) Esta opción lee un fichero de N=SIZExy/2 líneas con datos (x1 \tab y1 \n x2 \tab y2 \n... x0.5*SIZExy \tab y0.5*SIZExy) y los mete en a[SIZExy][1]
         for(i=0;i<SIZExy;i+=2){
-            fscanf(f1,"%lf\t%lf\n",&x[i][1],&x[i+1][1]);
+            fscanf(f1,"%lf\t%lf\n",&x[i],&x[i+1]);
         }
     }
     fclose(f1);
@@ -126,7 +131,7 @@ void Leer(double x[SIZExy][SIZEt],string filename,int tipo){
 }
 
 // Esta función reescala la "columna" 1 de cualquier array (x[][1]) segun el tipo de reescalado que se elija
-void Reescalar(double x[SIZExy][SIZEt],int tipo){
+void Reescalar(double x[SIZExy],int tipo){
 
     double Ms=1.99E30; //Cambio de unidades: m'=m/Ms
     double c=149.6E9; //Cambio de unidades de las posiciones: r'=r/c
@@ -136,15 +141,15 @@ void Reescalar(double x[SIZExy][SIZEt],int tipo){
 
     if(tipo==1){ //Tipo 1= masas. Pasa de kg a masas solares
         for(i=0;i<SIZExy;i++){
-            x[i][1]=x[i][1]/Ms;
+            x[i]=x[i]/Ms;
         }
     } else if(tipo==2){ //Tipo 2= posiciones. Pasa de m (¡no kilómetros!) a distancias Tierra-Sol
         for(i=0;i<SIZExy;i++){
-            x[i][1]=x[i][1]/c;
+            x[i]=x[i]/c;
         }
     } else if(tipo==3){ //Tipo 3= velocidades. Pasa de m/s (¡no km/s!) a distancias Tierra-Sol entre tiempos reescalados
         for(i=0;i<SIZExy;i++){
-            x[i][1]=x[i][1]/(c*k);
+            x[i]=x[i]*1.0/(c*k);
         }
     } else {return;} // ¿¿¿??? Me he inventado la sintaxis, pero funciona. Es redundante, though.
     
@@ -153,7 +158,7 @@ void Reescalar(double x[SIZExy][SIZEt],int tipo){
 }
 
 // Esta función calcula la aceleración de todos los cuerpos en función de sus posiciones (Newton)
-void CalcularAceleracion(double a[SIZExy][SIZEt],double m[SIZExy][SIZEt],double r[SIZExy][SIZEt]){
+void CalcularAceleracion(double a[SIZExy],double m[SIZExy],double r[SIZExy]){
     
     int i,j;
     double ax=0.0;
@@ -168,21 +173,21 @@ void CalcularAceleracion(double a[SIZExy][SIZEt],double m[SIZExy][SIZEt],double 
         ax=0.0; ay=0.0; // Tengo que reiniciar esto para la siguiente iteración
         for(j=0;j<SIZExy;j+=2){ // Uso += por limpieza
             if(j!=i){
-                    dx=r[j][1]-r[i][1]; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
-                    dy=r[j+1][1]-r[i+1][1]; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
+                    dx=r[j]-r[i]; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
+                    dy=r[j+1]-r[i+1]; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
                     modulo=sqrt(dx*dx+dy*dy); // Módulo=|rj-ri|
-                    ax+=(m[i][1]*dx)/(modulo*modulo*modulo); // ax=sum(j!=i)mj xj-xi/|rj-ri|^3
-                    ay+=(m[i][1]*dy)/(modulo*modulo*modulo); // ay=sum(j!=i)mj yj-yi/|rj-ri|^3
+                    ax+=(1.0*m[i]*dx)/(modulo*modulo*modulo); // ax=sum(j!=i)mj xj-xi/|rj-ri|^3
+                    ay+=(1.0*m[i]*dy)/(modulo*modulo*modulo); // ay=sum(j!=i)mj yj-yi/|rj-ri|^3
             } else continue;
         }
-        a[i][1]=ax; // La fórmula es a=G*sum(j!=i) rj-ri/|rj-ri|^3. Ya tengo la suma, falta multiplicar
-        a[i+1][1]=ay; // Así multiplico por G una sola vez y no en cada iteración
+        a[i]=ax; // La fórmula es a=G*sum(j!=i) rj-ri/|rj-ri|^3. Ya tengo la suma, falta multiplicar
+        a[i+1]=ay; // Así multiplico por G una sola vez y no en cada iteración
     }
     
     return;
 }
 
-void Escribir(double x[SIZExy][SIZEt],string filename){
+void Escribir(double x[SIZExy],string filename){
 
     int i;
     FILE *f1;
@@ -193,7 +198,7 @@ void Escribir(double x[SIZExy][SIZEt],string filename){
     write reescribe el archivo, el append añade justo al final B)*/
 
     for(i=0;i<SIZExy;i+=2){
-            fprintf(f1,"%lf,%lf\n",x[i][1],x[i+1][1]); // El lf es el double, que en fprintf se escribe así
+            fprintf(f1,"%lf,%lf\n",x[i],x[i+1]); // El lf es el double, que en fprintf se escribe así
         }
     fprintf(f1,"\n"); // XDDDDD por la sintaxis. Escribe un enter al final de cada bloque de 9 líneas, para matchear con el script de Python
     fclose(f1);
