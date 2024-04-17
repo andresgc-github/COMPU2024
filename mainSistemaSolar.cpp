@@ -1,128 +1,160 @@
 
-// Inclusión de paquetes
 # include <stdio.h>
-# include <cstdio> // Para el FILE
+# include <cstdio> 
 # include <iostream>
-# include <cmath> // Para el sqrt por ejemplo
-# include <string> // Para usar strings o algo así
-// Definiciones
+# include <cmath>
+# include <string> 
+
 # define SIZExy 18
-// # define SIZEm 9 esto es poquísimo elegante, pero así arreglo mis problemas de sintaxis
-// # define SIZEt 2
 
 using namespace std;
 
-// void Leer(double x[SIZExy][SIZEt],string filename); uso la de debajo por el script de python
 void Leer(double x[SIZExy],string filename,int tipo);
+void Escribir(double x[SIZExy],string filename);
 void Reescalar(double x[SIZExy], int tipo);
 void CalcularAceleracion(double a[SIZExy],double m[SIZExy],double r[SIZExy]);
-void Escribir(double x[SIZExy],string filename);
+void CalcularEnergia(double E[SIZExy],double m[SIZExy],double r[SIZExy],double v[SIZExy]);
 
 
 int main(){
 
-// BLOQUE 1: t=0
+    double Ms=1.99E30;
+    double c=149.6E9;
+    double k=sqrt(6.67E-11*Ms/(c*c*c));
 
-    // DECLARACIÓN DE VARIABLES
-    // Este array almacena las 9 masas de los cuerpos del sistema solar, empezando por el Sol -- ANTIGUO
-    double m[SIZExy]={1.0}; // El [SIZExy][SIZEt] lo tengo puesto por sintaxis de las funciones que uso debajo
-    // Estos arrays son matrices 18x2, y almacena en este orden: x1, y1, x2, y2, etc. Hace esto para el instante t y para el instante t+h
-    // Guarda las componentes x en los índices pares, y las componentes y en los índices impares
-    double r[SIZExy]={1.0}; 
-    double v[SIZExy]={1.0};
-    double a[SIZExy]={1.0};
-    // A continuación declaro strings con los nombres archivos de texto que uso para leer y escribir los datos y resultados
+    double m[SIZExy]={0.0}; 
+    double r[SIZExy]={0.0}; 
+    double v[SIZExy]={0.0};
+    double w[SIZExy]={0.0};
+    double a[SIZExy]={0.0};
+    double E[SIZExy]={0.0};
+    
     string masasini="masasini";
     string posicionesini="posicionesini";
     string velocidadesini="velocidadesini";
 
-    string posicionesR="planets_data";
+    string posicionesR="planets_data"; 
     string velocidadesR="velocidadesR";
     string aceleracionesR="aceleracionesR";
+    string energiasR="energy_data";
+    
+    Leer(m,masasini,2); 
+    Leer(r,posicionesini,2); 
+    Leer(v,velocidadesini,2);
 
-    // LECTURA: ahora se inicializan todos los arrays, leyendo de los ficheros de datos
-    Leer(m,masasini,2); // m[][1] sin reescalar
-    Leer(r,posicionesini,2); // r[][1] sin reescalar
-    Leer(v,velocidadesini,2); // v[][1] sin reescalar
-
-    // REESCALADO: se reescalan los arrays con los datos con las unidades sugeridas en el problema
     Reescalar(m,1); 
     Reescalar(r,2);
     Reescalar(v,3);
 
-    // Calculo a[][1] YA REESCALADO, así que no hace falta reescalarlo ahora
     CalcularAceleracion(a,m,r);
 
-    // Ahora mismo tengo todos los arrays reescalados. Los valores x[][0] siguen indefinidos.
-
-    // ESCRIBIR t=0: ahora se escriben todos los valores, reescalados, en los respectivos archivos para t=0
     Escribir(r,posicionesR);
     //Escribir(v,velocidadesR);
     //Escribir(a,aceleracionesR);
-    // Ahora están escritas (reescaladas) r,v,a en el instante inicial t=0.
-
-// BLOQUE 2: evolución temporal
-    // DECLARACIÓN DE VARIABLES
-    // Declaro la variable auxiliar w[][] del algoritmo de Verlet
-    double w[SIZExy]={1.0};
-    // Declaro el índice de planetas
-    int i;
-    // Declaro los reescalamientos para usarlos en el paso temporal
-    double Ms=1.99e30; //Cambio de unidades: m'=m/Ms
-    double c=149.6e9; //Cambio de unidades de las posiciones: r'=r/c
-    double k=sqrt(6.67e-11*Ms/(c*c*c));
-    // Declaro el tiempo y el paso temporal (unidad 58,1 días)
-    double t=0.0;
-    double h=80000.0; // Paso temporal. Con h=0.003, Mercurio tarda 500 iteraciones en dar 1 vuelta
+    
+    //////////////////////////////////////////////////
+    
+    int i; int contador=0;  
+    double t=0.0; 
+    double h=0.01;
 
     do{
+        CalcularEnergia(E,m,r,v);    
+        // cout << E[17] << endl; //da segmentation fault      
+
         for(i=0;i<SIZExy;i++){
-            //r[i][0]=r[i][1];
-            //v[i][0]=v[i][1];
-            //a[i][0]=a[i][1];
             r[i]+=h*v[i]+0.5*h*h*a[i];
-        }
-        for(i=0;i<SIZExy;i++){
             w[i]=v[i]+0.5*h*a[i];
-            //w[i]=a[i];  
-            //v[i]+=0.5*h*a[i];
-            //r[i]+=h*v[i];
         }
-        Escribir(r,posicionesR);
+        //if(contador%1000==0){
+            Escribir(E,energiasR);
+            Escribir(r,posicionesR);
+        //}
         CalcularAceleracion(a,m,r);
         //Escribir(a,aceleracionesR);
         for(i=0;i<SIZExy;i++){
             v[i]=w[i]+0.5*h*a[i];
-            //v[i]+=0.5*h*(w[i]+a[i]);   
-            //v[i]+=0.5*h*a[i];         
         }
         //Escribir(v,velocidadesR);
         t+=h;
-        //cout << t << endl;
-
-    }while(t<4000000*h);
-
+        contador++;
+        cout << t << endl;
+        // cout << E[17] << endl;
+    }while(t<20000000);
 
     return 0;
 }
 
+// Esta función calcula y almacena en un array E[] tanto la energía de cada planeta como la energía total, en la última componente del array
+
+void CalcularEnergia(double E[SIZExy],double m[SIZExy],double r[SIZExy],double v[SIZExy]){
+
+    int i,j;
+    double dx=0.0; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
+    double dy=0.0; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
+    double modulo=0.0; // Módulo=|rj-ri|
+    double K; // Energía cinética K=m*v*v/2
+    double U; // Energía potencial V=mi*mj/|rj-ri| (G=1)
+
+    E[17]=0.0;
+    for(i=0;i<SIZExy;i+=2){ // Hay tantas iteraciones como cuerpos en i, y como cuerpos-1 en j
+        K=0.5*m[i]*v[i]*v[i]; 
+        U=0.0; 
+        for(j=0;j<SIZExy;j+=2){ // Uso += por limpieza
+            if(j!=i){
+                    dx=r[j]-r[i]; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
+                    dy=r[j+1]-r[i+1]; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
+                    modulo=sqrt(dx*dx+dy*dy); // Módulo=|rj-ri|
+                    U+=m[i]*m[j]/modulo; //                    
+            } else continue;
+        }
+        E[i]=K+U;
+        E[17]+=E[i]; // La energía total del sistema solar se almacena en la última componente del vector E[]
+    }
+
+    return;
+}
+
+// Esta función calcula la aceleración de todos los cuerpos en función de sus posiciones (Newton)
+void CalcularAceleracion(double a[SIZExy],double m[SIZExy],double r[SIZExy]){
+    
+    int i,j;
+    double dx=0.0;
+    double dy=0.0;
+    double modulo=0.0;
+    
+    for(i=0;i<SIZExy;i+=2){ // Hay tantas iteraciones como cuerpos en i, y como cuerpos-1 en j
+        a[i]=0.0; a[i+1]=0.0; // Tengo que reiniciar esto para la siguiente iteración
+        for(j=0;j<SIZExy;j+=2){ // Uso += por limpieza
+            if(j!=i){
+                    dx=r[j]-r[i]; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
+                    dy=r[j+1]-r[i+1]; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
+                    modulo=sqrt(dx*dx+dy*dy); // Módulo=|rj-ri|
+                    a[i]+=m[j]*dx/(modulo*modulo*modulo); // ax=sum(j!=i)mj xj-xi/|rj-ri|^3
+                    a[i+1]+=m[j]*dy/(modulo*modulo*modulo); // ay=sum(j!=i)mj yj-yi/|rj-ri|^3
+            } else continue;
+        }
+    }
+    
+    return;
+}
 
 // Esta función reescala la "columna" 1 de cualquier array (x[][1]) segun el tipo de reescalado que se elija
 void Reescalar(double x[SIZExy],int tipo){
 
-    double Ms=1.99e30; //Cambio de unidades: m'=m/Ms
-    double c=149.6e9; //Cambio de unidades de las posiciones: r'=r/c
-    double k=sqrt((6.67e-11)*Ms/(c*c*c)); //Cambio de unidades temporales: t'=kt
+    double Ms=1.99E30; //Cambio de unidades: m'=m/Ms
+    double c=149.6E9; //Cambio de unidades de las posiciones: r'=r/c
+    double k=sqrt(6.67E-11*Ms/(c*c*c)); //Cambio de unidades temporales: t'=kt
 
     int i;
 
     if(tipo==1){ //Tipo 1= masas. Pasa de kg a masas solares
         for(i=0;i<SIZExy;i++){
-            x[i]=x[i]/(Ms*1.0);
+            x[i]=x[i]/Ms;
         }
     } else if(tipo==2){ //Tipo 2= posiciones. Pasa de m (¡no kilómetros!) a distancias Tierra-Sol
         for(i=0;i<SIZExy;i++){
-            x[i]=x[i]/(c*1.0);
+            x[i]=x[i]/c;
         }
     } else if(tipo==3){ //Tipo 3= velocidades. Pasa de m/s (¡no km/s!) a distancias Tierra-Sol entre tiempos reescalados
         for(i=0;i<SIZExy;i++){
@@ -132,39 +164,6 @@ void Reescalar(double x[SIZExy],int tipo){
     
 
     return; // Es redundante pero lo meto por un comentario que hizo mi profesor de programación
-}
-
-// Esta función calcula la aceleración de todos los cuerpos en función de sus posiciones (Newton)
-void CalcularAceleracion(double a[SIZExy],double m[SIZExy],double r[SIZExy]){
-    
-    int i,j;
-    //double ax=0.0;
-    //double ay=0.0;
-    double dx=0.0;
-    double dy=0.0;
-    double modulo=0.0;
-    double radical=0.0;
-    //double G=6.67E-11;
-
-    
-    for(i=0;i<SIZExy;i+=2){ // Hay tantas iteraciones como cuerpos en i, y como cuerpos-1 en j
-        //ax=0.0; ay=0.0; // Tengo que reiniciar esto para la siguiente iteración
-        a[i]=0.0; a[i+1]=0.0;
-        for(j=0;j<SIZExy;j+=2){ // Uso += por limpieza
-            if(j!=i){
-                    dx=r[i]-r[j]; // Resta de componentes X para cuerpos j-ésimo e i-ésimo, xj-xi
-                    dy=r[i+1]-r[j+1]; // Resta de componentes Y para cuerpos j-ésimo e i-ésimo, yj-yi
-                    radical=dx*dx+dy*dy;
-                    modulo=sqrt(radical); // Módulo=|rj-ri|
-                    a[i]+=-(1.0*m[j]*dx)/(modulo*modulo*modulo); // ax=sum(j!=i)mj xj-xi/|rj-ri|^3
-                    a[i+1]+=-(1.0*m[j]*dy)/(modulo*modulo*modulo); // ay=sum(j!=i)mj yj-yi/|rj-ri|^3
-            } else continue;
-        }
-        //a[i]=ax; // La fórmula es a=G*sum(j!=i) rj-ri/|rj-ri|^3. Ya tengo la suma, falta multiplicar
-        //a[i+1]=ay; // Así multiplico por G una sola vez y no en cada iteración
-    }
-    
-    return;
 }
 
 void Leer(double x[SIZExy],string filename,int tipo){
@@ -208,18 +207,3 @@ void Escribir(double x[SIZExy],string filename){
     fclose(f1);
     return;
 }
-
-/*void Inicializar(double x[SIZExy][SIZEt]){
-
-    int i,j;
-    for(i=0;i<SIZExy;i++){
-        for(j=0;j<SIZEt;j++){
-
-        }
-
-
-    }
-
-
-    return;
-}*/
